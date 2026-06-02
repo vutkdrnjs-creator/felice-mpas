@@ -12,21 +12,22 @@
     --accent: #1f6b4a; --accent2: #c2412d; --muted: #8a8472;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans KR', sans-serif; background: var(--paper); color: var(--ink); padding: 20px; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--paper); color: var(--ink); padding: 16px; }
+
   .topbar {
-    display: flex; align-items: center; gap: 14px; background: var(--ink); color: var(--paper);
-    padding: 14px 20px; border-radius: 10px; margin-bottom: 10px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 12px; background: var(--ink); color: var(--paper);
+    padding: 12px 16px; border-radius: 10px; margin-bottom: 10px; flex-wrap: wrap;
   }
   .topbar h1 { font-size: 16px; font-weight: 900; white-space: nowrap; }
-  .searchbox { flex: 1; display: flex; gap: 8px; min-width: 280px; }
+  .searchbox { flex: 1; display: flex; gap: 8px; min-width: 240px; }
   .searchbox input {
-    flex: 1; border: none; border-radius: 7px; padding: 11px 14px; font-size: 14px;
-    font-family: inherit; background: #2c3344; color: var(--paper);
+    flex: 1; border: none; border-radius: 7px; padding: 11px 14px; font-size: 15px;
+    font-family: inherit; background: #2c3344; color: var(--paper); min-width: 0;
   }
   .searchbox input::placeholder { color: #7e8699; }
   .searchbox button {
-    border: none; border-radius: 7px; padding: 11px 20px; background: var(--accent);
-    color: #fff; font-weight: 700; font-family: inherit; font-size: 14px; cursor: pointer;
+    border: none; border-radius: 7px; padding: 11px 18px; background: var(--accent);
+    color: #fff; font-weight: 700; font-family: inherit; font-size: 14px; cursor: pointer; white-space: nowrap;
   }
   .searchbox button:hover { background: #185539; }
 
@@ -35,17 +36,20 @@
     font-size: 13px; color: var(--muted); padding: 0 4px;
   }
   .coordbar input {
-    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 13px;
-    font-family: inherit; width: 150px;
+    border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font-size: 14px;
+    font-family: inherit; width: 140px;
   }
   .coordbar button {
-    border: none; border-radius: 6px; padding: 8px 14px; background: var(--accent2);
-    color: #fff; font-weight: 700; font-family: inherit; font-size: 13px; cursor: pointer;
+    border: none; border-radius: 6px; padding: 9px 14px; color: #fff;
+    font-weight: 700; font-family: inherit; font-size: 13px; cursor: pointer; white-space: nowrap;
   }
-  .coordbar .tip { font-size: 11px; color: var(--muted); }
+  .coordbar .btn-coord { background: var(--accent2); }
+  .coordbar .btn-pdf { background: var(--ink); }
+  .coordbar .tip { font-size: 11px; color: var(--muted); flex-basis: 100%; }
 
-  .meta { font-size: 12px; color: var(--muted); margin: 0 4px 14px; display: flex; gap: 18px; flex-wrap: wrap; min-height: 16px; }
+  .meta { font-size: 12px; color: var(--muted); margin: 0 4px 14px; display: flex; gap: 16px; flex-wrap: wrap; min-height: 16px; }
   .meta b { color: var(--ink); font-weight: 700; }
+
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .panel { background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; position: relative; }
   .panel .label {
@@ -57,6 +61,14 @@
     background: rgba(255,255,255,0.92); border-radius: 50%; display: flex; align-items: center;
     justify-content: center; font-size: 13px; font-weight: 900; color: var(--accent2); box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   }
+  /* 확대 버튼 */
+  .panel .expand-btn {
+    position: absolute; bottom: 10px; right: 10px; z-index: 6; background: rgba(26,31,43,0.85);
+    color: #fff; border: none; font-size: 12px; font-weight: 700; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer;
+  }
+  .panel .expand-btn:hover { background: var(--accent); }
+
   .view { width: 100%; height: 260px; background: #e9e4d6; position: relative; }
   .view .empty {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -68,29 +80,72 @@
     position: absolute; bottom: 10px; left: 10px; z-index: 5; background: rgba(26,31,43,0.85);
     color: #fff; font-size: 11px; padding: 5px 10px; border-radius: 6px;
   }
+
+  /* 전체화면 오버레이 */
+  .fs-overlay {
+    display: none; position: fixed; inset: 0; z-index: 999; background: #000;
+  }
+  .fs-overlay.show { display: block; }
+  .fs-view { width: 100%; height: 100%; }
+  .fs-back {
+    position: absolute; top: 16px; right: 16px; z-index: 1000; background: rgba(26,31,43,0.92);
+    color: #fff; border: none; font-size: 15px; font-weight: 700; padding: 12px 20px;
+    border-radius: 10px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  }
+  .fs-back:hover { background: var(--accent); }
+  .fs-title {
+    position: absolute; top: 16px; left: 16px; z-index: 1000; background: rgba(26,31,43,0.92);
+    color: #fff; font-size: 14px; font-weight: 700; padding: 12px 18px; border-radius: 10px;
+  }
+
   .hint { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.7; border-top: 1px dashed var(--line); padding-top: 12px; }
   .hint b { color: var(--ink); }
-  .status { font-size: 12px; padding: 8px 12px; border-radius: 7px; margin-bottom: 14px; display: none; }
+  .status { font-size: 13px; padding: 9px 12px; border-radius: 7px; margin-bottom: 14px; display: none; }
   .status.show { display: block; }
   .status.err { background: #fbe9e6; color: var(--accent2); }
   .status.ok { background: #e7f1ec; color: var(--accent); }
+
+  /* ===== 모바일 반응형 ===== */
+  @media (max-width: 720px) {
+    body { padding: 10px; }
+    .topbar { padding: 12px; gap: 10px; }
+    .topbar h1 { font-size: 15px; width: 100%; }
+    .searchbox { min-width: 0; }
+    .grid { grid-template-columns: 1fr; gap: 10px; }  /* 거리뷰 4칸을 세로 1열로 */
+    .view { height: 220px; }
+    .map-panel .view { height: 300px; }
+    .coordbar input { width: calc(50% - 4px); }
+    .coordbar button { flex: 1; }
+    .meta { gap: 10px; font-size: 11px; }
+  }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .topbar, .coordbar, .status, .hint, .map-hint, .expand-btn { display: none !important; }
+    .meta { margin: 0 0 8px; }
+    .grid { gap: 6px; }
+    .panel { border: 1px solid #999; break-inside: avoid; }
+    .view { height: 220px; }
+    .map-panel .view { height: 300px; }
+  }
 </style>
 </head>
 <body>
   <div class="topbar">
     <h1>점포 입지 조사</h1>
     <div class="searchbox">
-      <input id="addr" type="text" placeholder="점포 주소를 입력하세요 (예: 충북 청주시 흥덕구 강서로 108)">
+      <input id="addr" type="text" placeholder="점포 주소 입력 (예: 충북 청주시 흥덕구 강서로 108)">
       <button onclick="searchByAddr()">주소 조회</button>
     </div>
   </div>
 
   <div class="coordbar">
-    <span>또는 정확한 좌표:</span>
+    <span>또는 좌표:</span>
     <input id="lat" type="text" placeholder="위도 (예: 36.6240)">
     <input id="lng" type="text" placeholder="경도 (예: 127.4286)">
-    <button onclick="searchByCoord()">좌표로 조회</button>
-    <span class="tip">※ 지도에서 점포를 클릭하면 그 지점으로 거리뷰가 다시 맞춰집니다.</span>
+    <button class="btn-coord" onclick="searchByCoord()">좌표로 조회</button>
+    <button class="btn-pdf" onclick="savePDF()">📄 PDF로 저장</button>
+    <span class="tip">※ 지도에서 점포를 클릭하면 그 지점으로 거리뷰가 다시 맞춰집니다. 각 칸의 "⛶ 크게보기"로 전체화면 확대.</span>
   </div>
 
   <div id="status" class="status"></div>
@@ -98,32 +153,52 @@
 
   <div class="grid">
     <div class="panel"><span class="label">거리뷰 · 북</span><span class="compass">N</span>
+      <button class="expand-btn" onclick="openFull('pano-n','거리뷰 · 북')">⛶ 크게보기</button>
       <div class="view" id="pano-n"><div class="empty">주소·좌표를 조회하면 거리뷰가 표시됩니다</div></div></div>
     <div class="panel"><span class="label">거리뷰 · 동</span><span class="compass">E</span>
+      <button class="expand-btn" onclick="openFull('pano-e','거리뷰 · 동')">⛶ 크게보기</button>
       <div class="view" id="pano-e"><div class="empty">주소·좌표를 조회하면 거리뷰가 표시됩니다</div></div></div>
     <div class="panel"><span class="label">거리뷰 · 남</span><span class="compass">S</span>
+      <button class="expand-btn" onclick="openFull('pano-s','거리뷰 · 남')">⛶ 크게보기</button>
       <div class="view" id="pano-s"><div class="empty">주소·좌표를 조회하면 거리뷰가 표시됩니다</div></div></div>
     <div class="panel"><span class="label">거리뷰 · 서</span><span class="compass">W</span>
+      <button class="expand-btn" onclick="openFull('pano-w','거리뷰 · 서')">⛶ 크게보기</button>
       <div class="view" id="pano-w"><div class="empty">주소·좌표를 조회하면 거리뷰가 표시됩니다</div></div></div>
     <div class="panel map-panel"><span class="label">상권 지도 · 반경 1km</span>
+      <button class="expand-btn" onclick="openFull('map','상권 지도 · 반경 1km')">⛶ 크게보기</button>
       <div class="view" id="map"><div class="empty">주소·좌표를 조회하면 지도가 표시됩니다</div></div>
       <div class="map-hint" id="maphint" style="display:none;">📍 점포를 클릭하면 그 위치로 거리뷰가 다시 맞춰집니다</div>
     </div>
   </div>
 
+  <!-- 전체화면 오버레이 -->
+  <div class="fs-overlay" id="fsOverlay">
+    <div class="fs-title" id="fsTitle"></div>
+    <button class="fs-back" onclick="closeFull()">↩ 돌아가기</button>
+    <div class="fs-view" id="fsView"></div>
+  </div>
+
   <div class="hint">
-    <b>정확도 높이는 법:</b> 주소로 조회하면 도로명 주소 특성상 위치가 약간 빗나갈 수 있습니다. 그럴 땐 <b>하단 지도에서 실제 점포 건물을 클릭</b>하세요. 거리뷰 4방향이 그 지점 기준으로 다시 잡힙니다.<br>
-    <b>좌표를 직접 아는 경우:</b> 네이버 지도에서 점포 위치를 마우스 우클릭 → 좌표를 확인해 위·경도 칸에 넣고 "좌표로 조회"를 누르면 가장 정확합니다.<br>
-    <b>캡처:</b> 화면 전체를 캡처(Windows: ⊞+Shift+S / Mac: ⌘+Shift+4)해 상담일지에 붙여넣으세요.
+    <b>정확도 높이는 법 (가장 중요):</b> 주소로 조회하면 위치가 약간 빗나갈 수 있습니다. 그럴 땐 <b>하단 지도에서 실제 점포 건물을 클릭</b>하세요. 거리뷰 4방향이 그 지점으로 다시 잡히고 좌표도 자동으로 채워집니다.<br>
+    <b>크게 보기:</b> 각 칸의 "⛶ 크게보기" 버튼을 누르면 전체화면으로 확대됩니다. 우상단 "↩ 돌아가기"로 복귀합니다.<br>
+    <b>좌표를 직접 얻고 싶다면:</b> 네이버 지도는 좌표를 직접 표시하지 않습니다. 구글 지도(google.com/maps)에서 점포를 우클릭하면 맨 위에 좌표가 나오니 복사해 넣으세요. 다만 이 도구의 지도 클릭이 가장 빠릅니다.<br>
+    <b>PDF 저장:</b> "📄 PDF로 저장" → 대상을 "PDF로 저장"으로 선택. (거리뷰는 캡처가 빌 수 있어, 화면 캡처를 권장합니다.)
   </div>
 
   <script>
     let panos = {};
     let mapObj = null, circle = null, marker = null;
+    let currentPos = null;
+    let fsPano = null, fsMap = null, fsCircle = null, fsMarker = null;
 
     function setStatus(msg, type) {
       const s = document.getElementById('status');
       s.textContent = msg; s.className = 'status show ' + (type || '');
+    }
+
+    function savePDF() {
+      if (!mapObj) { setStatus('먼저 주소나 좌표로 조회한 뒤 PDF로 저장하세요.', 'err'); return; }
+      window.print();
     }
 
     function searchByAddr() {
@@ -156,16 +231,15 @@
     }
 
     function applyPosition(lat, lng, addrText) {
-      const pos = new naver.maps.LatLng(lat, lng);
+      currentPos = new naver.maps.LatLng(lat, lng);
       document.getElementById('meta').innerHTML =
         '<span>위치 <b>' + addrText + '</b></span>' +
         '<span>좌표 <b>' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</b></span>' +
         '<span>조사일 <b>' + new Date().toISOString().slice(0,10) + '</b></span>';
-      // 좌표칸에도 반영
       document.getElementById('lat').value = lat.toFixed(6);
       document.getElementById('lng').value = lng.toFixed(6);
-      renderMap(pos);
-      renderPanos(pos);
+      renderMap(currentPos);
+      renderPanos(currentPos);
     }
 
     function renderMap(pos) {
@@ -179,9 +253,9 @@
         fillColor: '#1f6b4a', fillOpacity: 0.08
       });
       mapObj.fitBounds(circle.getBounds());
-      // 지도 클릭 → 그 지점으로 재조정
       naver.maps.Event.addListener(mapObj, 'click', function(e) {
         const p = e.coord;
+        currentPos = p;
         marker.setPosition(p);
         circle.setCenter(p);
         document.getElementById('lat').value = p.lat().toFixed(6);
@@ -199,6 +273,7 @@
       { id: 'pano-n', pan: 0 }, { id: 'pano-e', pan: 90 },
       { id: 'pano-s', pan: 180 }, { id: 'pano-w', pan: 270 }
     ];
+    function panById(id) { for (const d of dirs) if (d.id === id) return d.pan; return 0; }
 
     function renderPanos(pos) {
       dirs.forEach(function(d) {
@@ -216,6 +291,59 @@
       });
     }
 
+    // ===== 전체화면 확대 =====
+    function openFull(id, title) {
+      if (!currentPos) { setStatus('먼저 주소나 좌표로 조회하세요.', 'err'); return; }
+      const overlay = document.getElementById('fsOverlay');
+      const fsView = document.getElementById('fsView');
+      document.getElementById('fsTitle').textContent = title;
+      fsView.innerHTML = '';
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+
+      if (id === 'map') {
+        // 지도 전체화면 (클릭으로 위치 재조정도 가능)
+        fsMap = new naver.maps.Map('fsView', { center: currentPos, zoom: 16 });
+        fsMarker = new naver.maps.Marker({ position: currentPos, map: fsMap });
+        fsCircle = new naver.maps.Circle({
+          map: fsMap, center: currentPos, radius: 1000,
+          strokeColor: '#1f6b4a', strokeWeight: 2, strokeStyle: 'shortdash',
+          fillColor: '#1f6b4a', fillOpacity: 0.08
+        });
+        fsMap.fitBounds(fsCircle.getBounds());
+        naver.maps.Event.addListener(fsMap, 'click', function(e) {
+          const p = e.coord;
+          currentPos = p;
+          fsMarker.setPosition(p); fsCircle.setCenter(p);
+          // 본 화면도 동기화
+          if (marker) marker.setPosition(p);
+          if (circle) circle.setCenter(p);
+          if (mapObj) mapObj.setCenter(p);
+          document.getElementById('lat').value = p.lat().toFixed(6);
+          document.getElementById('lng').value = p.lng().toFixed(6);
+          renderPanos(p);
+        });
+      } else {
+        // 거리뷰 전체화면 (해당 방향으로, 자유 조작 가능)
+        fsPano = new naver.maps.Panorama('fsView', {
+          position: currentPos, pov: { pan: panById(id), tilt: 0, fov: 100 },
+          logoControl: false
+        });
+      }
+      // 리사이즈 트리거 (네이버 객체가 새 컨테이너 크기를 인식하도록)
+      setTimeout(function() { if (window.naver) naver.maps.Event.trigger(fsMap || fsPano, 'resize'); }, 200);
+    }
+
+    function closeFull() {
+      const overlay = document.getElementById('fsOverlay');
+      overlay.classList.remove('show');
+      document.getElementById('fsView').innerHTML = '';
+      document.body.style.overflow = '';
+      fsPano = null; fsMap = null; fsCircle = null; fsMarker = null;
+    }
+
+    // ESC로 닫기
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeFull(); });
     document.getElementById('addr').addEventListener('keydown', function(e) { if (e.key === 'Enter') searchByAddr(); });
     document.getElementById('lng').addEventListener('keydown', function(e) { if (e.key === 'Enter') searchByCoord(); });
 
