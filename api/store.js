@@ -1,16 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { serveStore } from '../server/store-bridge.mjs';
-import { createGoogleTokenVerifier, GoogleAuthenticationError } from '../server/google-identity.mjs';
 
 const DEFAULT_ORIGIN = 'https://felice-mpas.vercel.app';
-const verifyGoogleToken = createGoogleTokenVerifier();
+const SHARED_USER = Object.freeze({ userId: 'public-shared-store', displayName: '공동 사용자' });
 const HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
 function reply(body, status = 200) { return new Response(JSON.stringify(body), { status, headers: HEADERS }); }
 function fail(code, message, status) { return reply({ ok: false, error: { code, message } }, status); }
-function clientId(config) {
-  const value = config.GOOGLE_CLIENT_ID;
-  return typeof value === 'string' && value.length <= 300 && /^[0-9]+-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/.test(value) ? value : '';
-}
 function appOrigin(config) {
   const value = config.APP_ORIGIN || DEFAULT_ORIGIN;
   try {
@@ -47,44 +42,25 @@ function snapshotPage(data, cursor, maxPageBytes) {
   return reply(pageBody(data.properties.slice(cursor.offset, end), end < data.properties.length ? end : null));
 }
 
-export function createStoreHandler({ getConfig = () => process.env, verifyIdToken = verifyGoogleToken, fetchImpl = fetch, maxPageBytes = 3_500_000 } = {}) {
+export function createStoreHandler({ getConfig = () => process.env, fetchImpl = fetch, maxPageBytes = 3_500_000 } = {}) {
   return async function handleStore(request) {
     try {
       if (!['GET', 'POST'].includes(request.method)) return fail('METHOD_NOT_ALLOWED', '허용되지 않은 요청입니다.', 405);
       const config = getConfig();
-      const oauthClientId = clientId(config);
       const origin = appOrigin(config);
       const url = new URL(request.url);
       if (request.method === 'GET' && url.searchParams.getAll('action').length > 1) return fail('INVALID_ACTION', '지원하지 않는 요청입니다.', 400);
-      if (request.method === 'GET' && url.searchParams.get('action') === 'config') {
-        if (!oauthClientId || !origin) return fail('AUTH_NOT_CONFIGURED', '로그인 설정이 필요합니다.', 503);
-        return reply({ ok: true, data: { clientId: oauthClientId } });
-      }
-      const identityRequest = request.method === 'GET' && url.searchParams.get('action') === 'identity';
-      if (request.method === 'GET' && url.searchParams.has('action') && !['snapshot', 'identity'].includes(url.searchParams.get('action'))) return fail('INVALID_ACTION', '지원하지 않는 요청입니다.', 400);
-      if (request.method === 'GET' && !identityRequest) {
+      if (request.method === 'GET' && url.searchParams.has('action') && url.searchParams.get('action') !== 'snapshot') return fail('INVALID_ACTION', '지원하지 않는 요청입니다.', 400);
+      if (request.method === 'GET') {
         const cursor = readCursor(url);
         if (!cursor) return fail('INVALID_INPUT', '조회 위치를 확인해 주세요.', 400);
-        // The public principal is created only for this fixed read path, never from browser input.
-        const response = await serveStore(request, { config, user: { userId: 'public-reader' }, fetchImpl, uuid: randomUUID });
+        const response = await serveStore(request, { config, user: SHARED_USER, fetchImpl, uuid: randomUUID });
         if (!response.ok) return response;
         const result = await response.json();
         return snapshotPage(result.data, cursor, maxPageBytes);
       }
-      if (!oauthClientId || !origin) return fail('AUTH_NOT_CONFIGURED', '로그인 설정이 필요합니다.', 503);
-      if (request.method === 'POST' && !new Set([url.origin, origin]).has(request.headers.get('origin'))) return fail('FORBIDDEN', '요청을 확인해 주세요.', 403);
-      const authorization = request.headers.get('authorization');
-      if (!authorization) return fail('AUTH_REQUIRED', '로그인이 필요합니다.', 401);
-      const token = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/i.exec(authorization);
-      if (!token || authorization.length > 16_400) return fail('AUTH_INVALID', '로그인을 다시 진행해 주세요.', 401);
-      let user;
-      try { user = await verifyIdToken(token[1], oauthClientId); }
-      catch (error) {
-        if (error instanceof GoogleAuthenticationError && error.code === 'AUTH_UNAVAILABLE') return fail('AUTH_UNAVAILABLE', '로그인 인증에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.', 503);
-        return fail('AUTH_INVALID', '로그인을 다시 진행해 주세요.', 401);
-      }
-      if (identityRequest) return reply({ ok: true, data: { userId: user.userId } });
-      return await serveStore(request, { config, user, fetchImpl, uuid: randomUUID, allowedOrigins: [origin] });
+      if (!new Set([url.origin, origin]).has(request.headers.get('origin'))) return fail('FORBIDDEN', '요청을 확인해 주세요.', 403);
+      return await serveStore(request, { config, user: SHARED_USER, fetchImpl, uuid: randomUUID, allowedOrigins: origin ? [origin] : [] });
     } catch { return fail('SERVER_ERROR', '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.', 500); }
   };
 }
